@@ -7,24 +7,15 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
-const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1393687088591015936/LrVYL5kN8K1XXwORlXvRCchyfdMdzGTMc1F_GMbDAEkF6-YIfFu9t8TsDEvcxLdNWhND";
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
+const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK;
 
 async function captureVanImage() {
   console.log("🛰️ Abrindo GTA Lens (Van de Arsenal)...");
 
   const browser = await puppeteer.launch({
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
     headless: true,
-    executablePath: "/usr/bin/google-chrome", // Chromium do sistema (Render.com)
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-accelerated-2d-canvas",
-      "--no-zygote",
-      "--single-process",
-      "--disable-gpu"
-    ]
   });
 
   try {
@@ -36,40 +27,32 @@ async function captureVanImage() {
 
     await page.goto("https://gtalens.com/map/gun-vans", {
       waitUntil: "networkidle2",
-      timeout: 60000
+      timeout: 60000,
     });
 
-    // Aceitar cookies se aparecer
-    try {
-      await page.click("button#accept-cookies");
-      console.log("Cookies aceitos");
-    } catch {
-      console.log("Botão de cookies não encontrado ou não necessário");
-    }
-
+    // Esperar o canvas carregar
     await page.waitForSelector("canvas", { timeout: 30000 });
-    console.log("Canvas encontrado");
+    const canvas = await page.$("canvas");
 
-    const canvasElement = await page.$("canvas");
-    if (!canvasElement) throw new Error("Canvas não encontrado");
+    if (!canvas) throw new Error("Canvas não encontrado");
 
-    const imageBuffer = await canvasElement.screenshot();
+    const screenshot = await canvas.screenshot();
 
     const form = new FormData();
-    form.append("file", imageBuffer, {
+    form.append("file", screenshot, {
       filename: "van.png",
-      contentType: "image/png"
+      contentType: "image/png",
     });
 
     const response = await fetch(DISCORD_WEBHOOK, {
       method: "POST",
-      body: form
+      body: form,
     });
 
     if (response.ok) {
       console.log("✅ Imagem enviada ao Discord!");
     } else {
-      console.error("❌ Erro ao enviar imagem ao Discord:", await response.text());
+      console.error("❌ Falha ao enviar imagem ao Discord:", await response.text());
     }
 
     await browser.close();
@@ -79,8 +62,10 @@ async function captureVanImage() {
   }
 }
 
+// Captura ao iniciar
 captureVanImage();
 
+// Web Server
 app.get("/", (req, res) => {
   res.send("Bot da Van rodando com Puppeteer!");
 });
@@ -89,7 +74,7 @@ app.listen(PORT, () => {
   console.log(`Servidor web escutando na porta ${PORT}`);
 });
 
-// Agendamento a cada 30 minutos
+// A cada 30 minutos
 setInterval(() => {
   captureVanImage();
 }, 30 * 60 * 1000);
