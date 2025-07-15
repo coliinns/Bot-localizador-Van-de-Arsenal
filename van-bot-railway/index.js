@@ -14,8 +14,17 @@ async function captureVanImage() {
   console.log("🛰️ Abrindo GTA Lens (Van de Arsenal)...");
 
   const browser = await puppeteer.launch({
-    headless: false, // muda para true no deploy!
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    headless: true,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-accelerated-2d-canvas",
+      "--no-first-run",
+      "--no-zygote",
+      "--single-process",
+      "--disable-gpu",
+    ],
   });
 
   try {
@@ -30,40 +39,23 @@ async function captureVanImage() {
       timeout: 60000,
     });
 
-    // Tenta clicar em vários botões que podem bloquear o canvas
-    const cookieSelectors = [
-      "button#accept-cookies",
-      "button.cookie-accept",
-      "button#onetrust-accept-btn-handler",
-      "button[aria-label='Accept cookies']",
-    ];
-
-    for (const sel of cookieSelectors) {
-      try {
-        await page.click(sel);
-        console.log(`Cookie aceito via seletor: ${sel}`);
-        break;
-      } catch {}
+    // Clicar no botão de aceitar cookies se aparecer
+    try {
+      await page.click("button#accept-cookies");
+      console.log("Cookies aceitos");
+    } catch {
+      console.log("Botão de cookies não encontrado ou não necessário");
     }
 
-    // Screenshot para diagnosticar o que está carregado antes do canvas
-    await page.screenshot({ path: "before_canvas.png" });
-    console.log("Screenshot before_canvas.png salva");
-
-    // Lista os frames para diagnóstico
-    for (const frame of page.frames()) {
-      console.log("Frame url:", frame.url());
-    }
-
-    // Aumenta timeout para 60s esperando canvas
-    await page.waitForSelector("canvas", { timeout: 60000 });
+    await page.waitForSelector("canvas", { timeout: 30000 });
     console.log("Canvas encontrado");
 
     const canvasElement = await page.$("canvas");
-    if (!canvasElement) throw new Error("Canvas não encontrado após waitForSelector");
+    if (!canvasElement) throw new Error("Canvas não encontrado");
 
     const imageBuffer = await canvasElement.screenshot();
 
+    // Enviar imagem para Discord via webhook
     const form = new FormData();
     form.append("file", imageBuffer, {
       filename: "van.png",
@@ -88,8 +80,10 @@ async function captureVanImage() {
   }
 }
 
+// Rodar a captura uma vez ao iniciar
 captureVanImage();
 
+// Servidor express só para manter app vivo e responder saúde
 app.get("/", (req, res) => {
   res.send("Bot da Van rodando com Puppeteer!");
 });
@@ -98,6 +92,7 @@ app.listen(PORT, () => {
   console.log(`Servidor web escutando na porta ${PORT}`);
 });
 
+// Captura automática a cada 30 minutos
 setInterval(() => {
   captureVanImage();
-}, 30 * 60 * 1000); // a cada 30 minutos
+}, 30 * 60 * 1000);
