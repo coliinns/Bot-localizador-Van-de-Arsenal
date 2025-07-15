@@ -1,14 +1,17 @@
 {
-  "name": "van-bot",
+  "name": "van-bot-railway",
   "version": "1.0.0",
-  "description": "Bot para enviar Van de Arsenal GTA Online",
+  "description": "Bot para localizar Van de Arsenal GTA Online",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
+    "puppeteer": "^20.9.0",
     "form-data": "^4.0.0",
-    "node-fetch": "^3.3.2",
-    "puppeteer": "^20.7.1"
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
