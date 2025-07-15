@@ -13,10 +13,9 @@ async function capturarImagemVan() {
   console.log("🛰️ Abrindo site GTA Lens (Van de Arsenal)...");
 
   const browser = await puppeteer.launch({
-    headless: true,
+    headless: "new",
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    executablePath: puppeteer.executablePath(),
-    defaultViewport: { width: 1280, height: 720 },
+    defaultViewport: { width: 1280, height: 720 }
   });
 
   const page = await browser.newPage();
@@ -39,6 +38,7 @@ async function capturarImagemVan() {
 
   await esperar(3000);
 
+  // Satélite
   await page.evaluate(() => {
     const spans = Array.from(document.querySelectorAll("span"));
     const satBtn = spans.find(span => span.textContent.trim().toLowerCase() === "satellite");
@@ -46,12 +46,14 @@ async function capturarImagemVan() {
   });
   await esperar(2000);
 
+  // Tela cheia
   await page.evaluate(() => {
     const fullscreenBtn = document.querySelector("a.leaflet-control-fullscreen-button");
     if (fullscreenBtn) fullscreenBtn.click();
   });
   await esperar(2000);
 
+  // Zoom (1x in + 3x out)
   const zoomIn = await page.$("span.leaflet-control-zoom-in");
   if (zoomIn) await zoomIn.click();
   await esperar(1000);
@@ -64,6 +66,7 @@ async function capturarImagemVan() {
     }
   }
 
+  // Centralizar Van + Aumentar ícone
   const resultado = await page.evaluate(() => {
     const divs = Array.from(document.querySelectorAll("div.leaflet-marker-icon"));
     const vanDiv = divs.find(div => div.innerHTML.includes("svg") && div.innerHTML.includes("viewBox=\"0 0 64 64\""));
@@ -132,12 +135,17 @@ async function enviarParaDiscord(caminhoImagem) {
 }
 
 async function main() {
+  console.log("⌚ Início da execução:", new Date().toLocaleString());
+
   const { screenshotPath } = await capturarImagemVan();
+
   if (screenshotPath) {
     await enviarParaDiscord(screenshotPath);
   } else {
     console.log("⚠️ Não foi possível capturar a imagem.");
   }
+
+  console.log("⌚ Fim da execução:", new Date().toLocaleString());
 }
 
-main();
+main().catch(err => console.error("Erro inesperado:", err));
