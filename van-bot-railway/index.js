@@ -13,18 +13,10 @@ async function capturarImagemVan() {
   console.log("🛰️ Abrindo site GTA Lens (Van de Arsenal)...");
 
   const browser = await puppeteer.launch({
-    headless: true,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-accelerated-2d-canvas",
-      "--no-first-run",
-      "--no-zygote",
-      "--single-process",
-      "--disable-gpu"
-    ],
+    headless: "new",
     defaultViewport: { width: 1280, height: 720 },
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
   });
 
   const page = await browser.newPage();
@@ -35,6 +27,7 @@ async function capturarImagemVan() {
 
   await esperar(5000);
 
+  // Clica no primeiro item da lista
   try {
     await page.evaluate(() => {
       const lista = document.querySelectorAll(".van-list-item");
@@ -47,6 +40,7 @@ async function capturarImagemVan() {
 
   await esperar(3000);
 
+  // Modo Satélite
   await page.evaluate(() => {
     const spans = Array.from(document.querySelectorAll("span"));
     const satBtn = spans.find(span => span.textContent.trim().toLowerCase() === "satellite");
@@ -54,12 +48,14 @@ async function capturarImagemVan() {
   });
   await esperar(2000);
 
+  // Tela cheia
   await page.evaluate(() => {
     const fullscreenBtn = document.querySelector("a.leaflet-control-fullscreen-button");
     if (fullscreenBtn) fullscreenBtn.click();
   });
   await esperar(2000);
 
+  // Zoom (1x in + 3x out)
   const zoomIn = await page.$("span.leaflet-control-zoom-in");
   if (zoomIn) await zoomIn.click();
   await esperar(1000);
@@ -72,11 +68,13 @@ async function capturarImagemVan() {
     }
   }
 
+  // Centralizar Van + Aumentar ícone
   const resultado = await page.evaluate(() => {
     const divs = Array.from(document.querySelectorAll("div.leaflet-marker-icon"));
     const vanDiv = divs.find(div => div.innerHTML.includes("svg") && div.innerHTML.includes("viewBox=\"0 0 64 64\""));
     if (!vanDiv) return null;
 
+    // Aumentar ícone
     vanDiv.style.transform += " scale(1.3)";
     vanDiv.style.zIndex = "9999";
 
@@ -96,7 +94,7 @@ async function capturarImagemVan() {
     return { screenshotPath: null };
   }
 
-  const screenshotPath = "/tmp/van_lens.png";
+  const screenshotPath = "van_lens.png";
   await esperar(1500);
   await page.screenshot({ path: screenshotPath });
   await browser.close();
@@ -140,19 +138,11 @@ async function enviarParaDiscord(caminhoImagem) {
 }
 
 async function main() {
-  while (true) {
-    try {
-      const { screenshotPath } = await capturarImagemVan();
-      if (screenshotPath) {
-        await enviarParaDiscord(screenshotPath);
-      } else {
-        console.log("⚠️ Não foi possível capturar a imagem.");
-      }
-    } catch (err) {
-      console.error("❌ Erro geral:", err);
-    }
-    console.log("⏳ Esperando 15 minutos para próxima execução...");
-    await esperar(15 * 60 * 1000);
+  const { screenshotPath } = await capturarImagemVan();
+  if (screenshotPath) {
+    await enviarParaDiscord(screenshotPath);
+  } else {
+    console.log("⚠️ Não foi possível capturar a imagem.");
   }
 }
 
