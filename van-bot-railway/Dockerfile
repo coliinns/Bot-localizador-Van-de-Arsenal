@@ -1,7 +1,7 @@
 # Usar uma imagem Node.js oficial baseada em Debian (bullseye)
 FROM node:18-bullseye
 
-# Instalar dependências necessárias para Chromium (inclui libdrm2)
+# Instalar dependências necessárias para Chromium (inclui libdrm2, libgbm1, e outras)
 RUN apt-get update && apt-get install -y \
     gconf-service \
     libasound2 \
@@ -39,9 +39,11 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     wget \
     libdrm2 \
+    libgbm1 \
+    fonts-noto-color-emoji \
   && rm -rf /var/lib/apt/lists/*
 
-# Criar diretório de trabalho
+# Definir diretório de trabalho
 WORKDIR /app
 
 # Copiar package.json e package-lock.json (se existir)
@@ -50,11 +52,11 @@ COPY package*.json ./
 # Instalar dependências do Node.js
 RUN npm install
 
-# Copiar o restante dos arquivos
+# Copiar todo o restante dos arquivos para o container
 COPY . .
 
-# Expor porta (se seu app escuta, ex: 8080)
+# Expor a porta que o app usa
 EXPOSE 8080
 
-# Comando para rodar o bot
+# Comando para iniciar o bot
 CMD ["node", "index.js"]
