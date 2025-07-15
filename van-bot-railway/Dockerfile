@@ -1,9 +1,11 @@
-# Usar uma imagem Node.js oficial baseada em Debian (bullseye)
-FROM node:18-bullseye
+FROM debian:bullseye
 
-# Instalar dependências necessárias para Chromium (inclui libdrm2, libgbm1, e outras)
+# Instalar dependências
 RUN apt-get update && apt-get install -y \
-    gconf-service \
+    wget \
+    gnupg \
+    ca-certificates \
+    fonts-liberation \
     libasound2 \
     libatk1.0-0 \
     libc6 \
@@ -32,31 +34,29 @@ RUN apt-get update && apt-get install -y \
     libxrender1 \
     libxss1 \
     libxtst6 \
-    ca-certificates \
-    fonts-liberation \
     libnss3 \
     lsb-release \
     xdg-utils \
-    wget \
-    libdrm2 \
+    unzip \
+    curl \
+    gnupg2 \
     libgbm1 \
-    fonts-noto-color-emoji \
-  && rm -rf /var/lib/apt/lists/*
+    libdrm2 \
+    libu2f-udev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Definir diretório de trabalho
+# Instalar o Google Chrome (headless)
+RUN curl -sSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg \
+ && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
+ && apt-get update && apt-get install -y google-chrome-stable
+
+# Instalar Node.js
+FROM node:18-bullseye as base
+
 WORKDIR /app
-
-# Copiar package.json e package-lock.json (se existir)
 COPY package*.json ./
-
-# Instalar dependências do Node.js
 RUN npm install
-
-# Copiar todo o restante dos arquivos para o container
 COPY . .
 
-# Expor a porta que o app usa
 EXPOSE 8080
-
-# Comando para iniciar o bot
 CMD ["node", "index.js"]
