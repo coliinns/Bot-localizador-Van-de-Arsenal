@@ -24,25 +24,40 @@ async function captureVanImage() {
 
     console.log("⏳ Navegando para o site...");
     await page.goto("https://gtalens.com/map/gun-vans", {
-      waitUntil: "load",
-      timeout: 60000,
+      waitUntil: "networkidle2",
+      timeout: 0,
     });
 
-    console.log("📸 Tirando screenshot da página...");
-    await page.screenshot({ path: "page.png", fullPage: true });
-    console.log("✅ Screenshot tirado");
+    // Tira screenshot da página inteira para debug
+    const fullPageScreenshot = await page.screenshot();
 
-    console.log("⏳ Esperando o canvas aparecer...");
-    await page.waitForSelector("canvas", { timeout: 60000 });
-    console.log("✅ Canvas encontrado");
+    // Envia screenshot da página inteira para o Discord
+    const formPage = new FormData();
+    formPage.append("file", fullPageScreenshot, {
+      filename: "page.png",
+      contentType: "image/png",
+    });
 
+    const responsePage = await fetch(DISCORD_WEBHOOK, {
+      method: "POST",
+      body: formPage,
+    });
+
+    if (responsePage.ok) {
+      console.log("✅ Screenshot da página enviado ao Discord!");
+    } else {
+      console.error("❌ Falha ao enviar screenshot da página ao Discord:", await responsePage.text());
+    }
+
+    // Agora tenta capturar o canvas específico
+    console.log("⏳ Esperando canvas carregar...");
+    await page.waitForSelector("canvas", { timeout: 30000 });
     const canvas = await page.$("canvas");
+
     if (!canvas) throw new Error("Canvas não encontrado");
 
-    console.log("📸 Capturando a imagem do canvas...");
     const screenshot = await canvas.screenshot();
 
-    console.log("📤 Enviando imagem para o Discord...");
     const form = new FormData();
     form.append("file", screenshot, {
       filename: "van.png",
@@ -55,21 +70,22 @@ async function captureVanImage() {
     });
 
     if (response.ok) {
-      console.log("✅ Imagem enviada ao Discord!");
+      console.log("✅ Imagem do canvas enviada ao Discord!");
     } else {
-      console.error("❌ Falha ao enviar imagem ao Discord:", await response.text());
+      console.error("❌ Falha ao enviar imagem do canvas ao Discord:", await response.text());
     }
 
-  } catch (error) {
-    console.error("❗ Erro durante captura:", error);
-  } finally {
     await browser.close();
-    console.log("🛑 Browser fechado");
+  } catch (error) {
+    console.error("Erro durante captura:", error);
+    await browser.close();
   }
 }
 
+// Captura inicial
 captureVanImage();
 
+// Servidor web básico
 app.get("/", (req, res) => {
   res.send("Bot da Van rodando com Puppeteer!");
 });
@@ -78,6 +94,7 @@ app.listen(PORT, () => {
   console.log(`Servidor web escutando na porta ${PORT}`);
 });
 
+// Captura a cada 30 minutos
 setInterval(() => {
   captureVanImage();
 }, 30 * 60 * 1000);
