@@ -1,6 +1,5 @@
 import express from "express";
-import puppeteer from "puppeteer-core";
-import chrome from "chrome-aws-lambda";
+import puppeteer from "puppeteer";
 import fetch from "node-fetch";
 import FormData from "form-data";
 import dotenv from "dotenv";
@@ -15,9 +14,8 @@ async function captureVanImage() {
   console.log("🛰️ Abrindo GTA Lens (Van de Arsenal)...");
 
   const browser = await puppeteer.launch({
-    args: chrome.args,
-    executablePath: await chrome.executablePath,
-    headless: chrome.headless,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    headless: true,
   });
 
   try {
@@ -40,17 +38,14 @@ async function captureVanImage() {
       console.log("Botão de cookies não encontrado ou não necessário");
     }
 
-    // Espera pelo canvas com timeout maior
     await page.waitForSelector("canvas", { timeout: 30000 });
     console.log("Canvas encontrado");
 
-    // Você pode ajustar o screenshot para capturar só a área desejada
     const canvasElement = await page.$("canvas");
     if (!canvasElement) throw new Error("Canvas não encontrado após waitForSelector");
 
     const imageBuffer = await canvasElement.screenshot();
 
-    // Enviar imagem para o Discord via webhook
     const form = new FormData();
     form.append("file", imageBuffer, {
       filename: "van.png",
@@ -75,10 +70,8 @@ async function captureVanImage() {
   }
 }
 
-// Executa a captura inicialmente
 captureVanImage();
 
-// Servidor Express para manter o bot rodando e responder em /
 app.get("/", (req, res) => {
   res.send("Bot da Van rodando com Puppeteer!");
 });
@@ -87,7 +80,6 @@ app.listen(PORT, () => {
   console.log(`Servidor web escutando na porta ${PORT}`);
 });
 
-// Opcional: captura a cada X minutos para atualizar info (exemplo a cada 30 minutos)
 setInterval(() => {
   captureVanImage();
-}, 30 * 60 * 1000); // 30 minutos
+}, 30 * 60 * 1000); // a cada 30 minutos
