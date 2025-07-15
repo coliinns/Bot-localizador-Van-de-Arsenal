@@ -1,7 +1,7 @@
-const puppeteer = require("puppeteer");
-const fs = require("fs");
-const FormData = require("form-data");
-const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fetch(...args));
+import puppeteer from "puppeteer";
+import fs from "fs";
+import FormData from "form-data";
+import fetch from "node-fetch";
 
 const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1393687088591015936/LrVYL5kN8K1XXwORlXvRCchyfdMdzGTMc1F_GMbDAEkF6-YIfFu9t8TsDEvcxLdNWhND";
 
@@ -13,10 +13,10 @@ async function capturarImagemVan() {
   console.log("🛰️ Abrindo site GTA Lens (Van de Arsenal)...");
 
   const browser = await puppeteer.launch({
-    headless: "new",
-    executablePath: "/usr/bin/chromium", // 🚀 compatível com Railway (Nixpacks)
+    headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    defaultViewport: { width: 1280, height: 720 }
+    executablePath: puppeteer.executablePath(),
+    defaultViewport: { width: 1280, height: 720 },
   });
 
   const page = await browser.newPage();
@@ -94,6 +94,7 @@ async function capturarImagemVan() {
   await browser.close();
 
   console.log("📍 Coordenadas da Van (para debug):", resultado.x, resultado.y);
+
   return { screenshotPath };
 }
 
