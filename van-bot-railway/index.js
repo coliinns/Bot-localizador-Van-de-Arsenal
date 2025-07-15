@@ -24,12 +24,17 @@ async function captureVanImage() {
 
     console.log("⏳ Navegando para o site...");
     await page.goto("https://gtalens.com/map/gun-vans", {
-      waitUntil: "networkidle2",
-      timeout: 60000, // 60 segundos para carregar
+      waitUntil: "load",
+      timeout: 60000,
     });
+
+    console.log("📸 Tirando screenshot da página...");
+    await page.screenshot({ path: "page.png", fullPage: true });
+    console.log("✅ Screenshot tirado");
 
     console.log("⏳ Esperando o canvas aparecer...");
     await page.waitForSelector("canvas", { timeout: 60000 });
+    console.log("✅ Canvas encontrado");
 
     const canvas = await page.$("canvas");
     if (!canvas) throw new Error("Canvas não encontrado");
