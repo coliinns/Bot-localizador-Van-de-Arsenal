@@ -14,8 +14,8 @@ async function captureVanImage() {
   console.log("🛰️ Abrindo GTA Lens (Van de Arsenal)...");
 
   const browser = await puppeteer.launch({
+    headless: false, // muda para true no deploy!
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    headless: true,
   });
 
   try {
@@ -30,15 +30,33 @@ async function captureVanImage() {
       timeout: 60000,
     });
 
-    // Tenta clicar no botão de aceitar cookies se existir
-    try {
-      await page.click("button#accept-cookies");
-      console.log("Cookies aceitos");
-    } catch {
-      console.log("Botão de cookies não encontrado ou não necessário");
+    // Tenta clicar em vários botões que podem bloquear o canvas
+    const cookieSelectors = [
+      "button#accept-cookies",
+      "button.cookie-accept",
+      "button#onetrust-accept-btn-handler",
+      "button[aria-label='Accept cookies']",
+    ];
+
+    for (const sel of cookieSelectors) {
+      try {
+        await page.click(sel);
+        console.log(`Cookie aceito via seletor: ${sel}`);
+        break;
+      } catch {}
     }
 
-    await page.waitForSelector("canvas", { timeout: 30000 });
+    // Screenshot para diagnosticar o que está carregado antes do canvas
+    await page.screenshot({ path: "before_canvas.png" });
+    console.log("Screenshot before_canvas.png salva");
+
+    // Lista os frames para diagnóstico
+    for (const frame of page.frames()) {
+      console.log("Frame url:", frame.url());
+    }
+
+    // Aumenta timeout para 60s esperando canvas
+    await page.waitForSelector("canvas", { timeout: 60000 });
     console.log("Canvas encontrado");
 
     const canvasElement = await page.$("canvas");
