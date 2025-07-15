@@ -26,8 +26,8 @@ async function captureVanImage() {
     );
 
     await page.goto("https://gtalens.com/map/gun-vans", {
-      waitUntil: "networkidle2",
-      timeout: 60000,
+  waitUntil: "networkidle2", // espera a página estar estática
+  timeout: 0, // desativa o timeout padrão
     });
 
     // Esperar o canvas carregar
