@@ -7,8 +7,8 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 8080;
-const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK;
+const PORT = 8080;
+const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1393687088591015936/LrVYL5kN8K1XXwORlXvRCchyfdMdzGTMc1F_GMbDAEkF6-YIfFu9t8TsDEvcxLdNWhND";
 
 async function captureVanImage() {
   console.log("🛰️ Abrindo GTA Lens (Van de Arsenal)...");
