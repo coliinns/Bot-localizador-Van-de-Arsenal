@@ -2,9 +2,6 @@ import express from "express";
 import puppeteer from "puppeteer";
 import fetch from "node-fetch";
 import FormData from "form-data";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 const app = express();
 const PORT = 8080;
@@ -13,29 +10,34 @@ const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1393687088591015936/Lr
 async function captureVanImage() {
   console.log("🛰️ Abrindo GTA Lens (Van de Arsenal)...");
 
-  const browser = await puppeteer.launch({
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    headless: true,
-  });
+  let browser;
 
   try {
+    browser = await puppeteer.launch({
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      headless: true,
+    });
+
     const page = await browser.newPage();
 
     await page.setUserAgent(
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
     );
 
+    console.log("⏳ Navegando para o site...");
     await page.goto("https://gtalens.com/map/gun-vans", {
-  waitUntil: "networkidle2", // espera a página estar estática
-  timeout: 0, // desativa o timeout padrão
+      waitUntil: "networkidle2",
+      timeout: 0,
     });
 
-    // Esperar o canvas carregar
+    console.log("⏳ Esperando o canvas carregar...");
     await page.waitForSelector("canvas", { timeout: 30000 });
+
     const canvas = await page.$("canvas");
 
     if (!canvas) throw new Error("Canvas não encontrado");
 
+    console.log("⏳ Tirando screenshot...");
     const screenshot = await canvas.screenshot();
 
     const form = new FormData();
@@ -44,6 +46,7 @@ async function captureVanImage() {
       contentType: "image/png",
     });
 
+    console.log("⏳ Enviando imagem para o Discord...");
     const response = await fetch(DISCORD_WEBHOOK, {
       method: "POST",
       body: form,
@@ -54,11 +57,10 @@ async function captureVanImage() {
     } else {
       console.error("❌ Falha ao enviar imagem ao Discord:", await response.text());
     }
-
-    await browser.close();
   } catch (error) {
     console.error("Erro durante captura:", error);
-    await browser.close();
+  } finally {
+    if (browser) await browser.close();
   }
 }
 
