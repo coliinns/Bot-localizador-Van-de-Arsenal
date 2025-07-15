@@ -7,24 +7,24 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 8080;
-const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK;
+const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1393687088591015936/LrVYL5kN8K1XXwORlXvRCchyfdMdzGTMc1F_GMbDAEkF6-YIfFu9t8TsDEvcxLdNWhND";
+const PORT = 8080;
 
 async function captureVanImage() {
   console.log("🛰️ Abrindo GTA Lens (Van de Arsenal)...");
 
   const browser = await puppeteer.launch({
     headless: true,
+    executablePath: "/usr/bin/google-chrome", // Chromium do sistema (Render.com)
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
       "--disable-accelerated-2d-canvas",
-      "--no-first-run",
       "--no-zygote",
       "--single-process",
-      "--disable-gpu",
-    ],
+      "--disable-gpu"
+    ]
   });
 
   try {
@@ -36,10 +36,10 @@ async function captureVanImage() {
 
     await page.goto("https://gtalens.com/map/gun-vans", {
       waitUntil: "networkidle2",
-      timeout: 60000,
+      timeout: 60000
     });
 
-    // Clicar no botão de aceitar cookies se aparecer
+    // Aceitar cookies se aparecer
     try {
       await page.click("button#accept-cookies");
       console.log("Cookies aceitos");
@@ -55,22 +55,21 @@ async function captureVanImage() {
 
     const imageBuffer = await canvasElement.screenshot();
 
-    // Enviar imagem para Discord via webhook
     const form = new FormData();
     form.append("file", imageBuffer, {
       filename: "van.png",
-      contentType: "image/png",
+      contentType: "image/png"
     });
 
     const response = await fetch(DISCORD_WEBHOOK, {
       method: "POST",
-      body: form,
+      body: form
     });
 
     if (response.ok) {
       console.log("✅ Imagem enviada ao Discord!");
     } else {
-      console.error("❌ Falha ao enviar imagem ao Discord", await response.text());
+      console.error("❌ Erro ao enviar imagem ao Discord:", await response.text());
     }
 
     await browser.close();
@@ -80,10 +79,8 @@ async function captureVanImage() {
   }
 }
 
-// Rodar a captura uma vez ao iniciar
 captureVanImage();
 
-// Servidor express só para manter app vivo e responder saúde
 app.get("/", (req, res) => {
   res.send("Bot da Van rodando com Puppeteer!");
 });
@@ -92,7 +89,7 @@ app.listen(PORT, () => {
   console.log(`Servidor web escutando na porta ${PORT}`);
 });
 
-// Captura automática a cada 30 minutos
+// Agendamento a cada 30 minutos
 setInterval(() => {
   captureVanImage();
 }, 30 * 60 * 1000);
