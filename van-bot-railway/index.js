@@ -2,6 +2,7 @@ import puppeteer from "puppeteer";
 import fs from "fs";
 import FormData from "form-data";
 import fetch from "node-fetch";
+import express from "express";
 
 const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1393687088591015936/LrVYL5kN8K1XXwORlXvRCchyfdMdzGTMc1F_GMbDAEkF6-YIfFu9t8TsDEvcxLdNWhND";
 
@@ -149,3 +150,9 @@ async function main() {
 }
 
 main().catch(err => console.error("Erro inesperado:", err));
+
+/* 🔹 Servidor Express para o Render não encerrar o processo */
+const app = express();
+const PORT = process.env.PORT || 3000;
+app.get("/", (req, res) => res.send("✅ Bot da Van está rodando no Render!"));
+app.listen(PORT, () => console.log(`🌐 Servidor web ativo na porta ${PORT}`));
